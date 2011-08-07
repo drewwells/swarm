@@ -21,7 +21,9 @@ function blurIt(){
         y,
         x = y = 0;
 
-//return;
+
+
+return;
     setInterval(function(){
 
         move( x, y, function( newx, newy ){
