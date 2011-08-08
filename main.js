@@ -88,11 +88,9 @@ function Blur( source, dest, height, width, radius ){
     radius = radius * 4; //4 colors per pixel
     var rad = Math.pow( radius * 2, 2);
 
-    //h4 = 200;
-    //w4 = 200;
-    for( y=100; y < h4; y++ ){
+    for( y=0; y < h4; y++ ){
 
-        for( x=100; x < w4; x++ ){
+        for( x=0; x < w4; x++ ){
 
             total = 0;
             var q = 0;
