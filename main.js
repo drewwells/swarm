@@ -1,10 +1,14 @@
-var canvas = document.getElementById('image-blur'),
- ctx = canvas.getContext('2d');
+var canvas = document.getElementById('image'),
+ ctx = canvas.getContext('2d'),
+ canvas2 = document.getElementById('image-blur'),
+ ctx2 = canvas2.getContext('2d');
 
 var img = new window.Image();
 img.src = 'amanda.jpg';
 img.onload = function(){
+
     ctx.drawImage( img, 0, 0 );
+    //ctx2.drawImage( img, 0, 0 );    
     button.click();
 };
 
@@ -20,8 +24,16 @@ function blurIt(){
         maxy = img.naturalHeight - radius * 2,
         y,
         x = y = 0;
+    var input = ctx.getImageData(0,0,img.naturalWidth,img.naturalHeight);
 
-
+    var output = Blur( input,
+              ctx2.getImageData(0,0,img.naturalWidth,img.naturalHeight),
+              h,
+              w,
+              2 );
+    
+    ctx2.createImageData( output );
+    ctx2.putImageData( output, 0, 0 );
 
 return;
     setInterval(function(){
@@ -55,9 +67,55 @@ return;
 
 }
 
+//Range
+// The CanvasPixelArray contains height x width x 4 bytes of data, with index values ranging from 0 to (height x width x 4)-1.
+// Column 200, Row 50
+//blueComponent = imageData.data[((50*(imageData.width*4)) + (200*4)) + 2];
+
+function Blur( source, dest, height, width, radius ){
+
+    var x,y,total = 0,
+        ky,kx,
+        src = source.data,
+        dst = dest.data,
+        h4 = height * 4,
+        w4 = width * 4,
+        iw4 = source.width * 4,
+        buffer = 0;
+
+
+    radius = radius || 2;
+    radius = radius * 4; //4 colors per pixel
+    var rad = Math.pow( radius * 2, 2);
+
+    //h4 = 200;
+    //w4 = 200;
+    for( y=100; y < h4; y++ ){
+
+        for( x=100; x < w4; x++ ){
+
+            total = 0;
+            var q = 0;
+            for( ky = -radius; ky <= radius; ky = ky + 1 ){
+
+                for( kx = -radius; kx <= radius; kx = kx + 4 ){
+
+                    buffer = src[ x + kx + (y + ky ) * iw4 ];
+                    total += isNaN( buffer ) ? 0 : buffer;
+                    q++;
+                }
+            }
+            //console.log( x, y, total, total/85, q );
+            dst[ x + y * iw4 ] = Math.floor( total / 85 );
+
+        }
+
+    }
+    return dest;
+}
+
 function move( x, y, callback, increment, bitx, bity ){
-    //console.log( x, bitx );
-    //console.log( y, bity );
+
     increment = increment || 30;
     callback( x + ( increment * bitx ), y + ( increment * bity ) );
 }
