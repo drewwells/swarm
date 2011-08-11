@@ -4,11 +4,13 @@ var canvas = document.getElementById('image'),
  ctx2 = canvas2.getContext('2d');
 
 var img = new window.Image();
-img.src = 'amanda.jpg';
+//img.src = 'amanda.jpg';
+img.src = 'img00.gif';
 img.onload = function(){
 
     ctx.drawImage( img, 0, 0 );
-    //ctx2.drawImage( img, 0, 0 );    
+    //ctx2.drawImage( img, 0, 0 );  
+
     button.click();
 };
 
@@ -27,44 +29,18 @@ function blurIt(){
     var input = ctx.getImageData(0,0,img.naturalWidth,img.naturalHeight);
 
     var output = Blur( input,
-              ctx2.getImageData(0,0,img.naturalWidth,img.naturalHeight),
-              h,
-              w,
-              2 );
+                       ctx2.getImageData(0,0,img.naturalWidth,img.naturalHeight),
+                       //RETARD
+                       //h,
+                       //w,
+                       img.naturalHeight,
+                       img.naturalWidth,
+                       2 );
 
     ctx2.createImageData( output );
     ctx2.putImageData( output, 0, 0 );
 
-return;
-    setInterval(function(){
-
-        move( x, y, function( newx, newy ){
-            x = newx;
-            y = newy;
-
-            if( x > maxx ){
-
-                x = maxx - ( maxx - x );
-                bitx = bitx * -1;
-            } else if( x < 0 ){
-                x = Math.abs( x );
-                bitx = bitx * -1;
-            }
-
-            if( y > maxy ) {
-
-                x = maxx - ( maxx - x );
-                bity = bity * -1;
-            } else if( y < 0 ){
-                y = Math.abs( y );
-                bity = bity * -1;
-            }
-            //console.log( x, y );
-            stackBlurCanvasRGB( canvas, x, y, x + 2, y + 2, radius );
-        }, 50 , bitx, bity );
-
-    }, 125);
-
+    return;
 }
 
 //Range
@@ -80,34 +56,34 @@ function Blur( source, dest, height, width, radius ){
         dst = dest.data,
         h4 = height * 4,
         w4 = width * 4,
-        iw4 = source.width * 4,
+        r4 = radius * 4,
+        //iw4 = source.width * 4,
         buffer = 0,
         rad,
         q;
 
-
     radius = radius || 2;
-    radius = radius * 4; //4 colors per pixel
-    rad = Math.pow( radius * 2, 2);
-    
-    return BlurLine( source, dest, h4, w4, radius );
+    //radius = radius * 4; //4 colors per pixel
+    rad = Math.pow( radius * 2 + 1, 2);
+
+    return BlurLine( source, dest, height, w4, radius );
     for( y=0; y < h4; y++ ){
 
         for( x=0; x < w4; x++ ){
 
             total = 0;
             q = 0;
-            for( ky = -radius; ky <= radius; ky = ky + 1 ){
+            for( ky = -radius; ky <= radius; ky++ ){
 
-                for( kx = -radius; kx <= radius; kx = kx + 4 ){
+                for( kx = -r4; kx <= r4; kx++ ){
 
-                    buffer = src[ x + kx + (y + ky ) * iw4 ];
+                    buffer = src[ x + kx + (y + ky ) * w4 ];
                     total += isNaN( buffer ) ? 0 : buffer;
                     q++;
                 }
             }
             //console.log( x, y, total, total/85, q );
-            dst[ x + y * iw4 ] = Math.floor( total / 85 );
+            dst[ x + y * w4 ] = Math.floor( total / 85 );
 
         }
 
@@ -116,24 +92,74 @@ function Blur( source, dest, height, width, radius ){
 }
 
 function BlurLine( source, dest, height, width, radius ){
-    var y, x, kx, total, iw4 = source.width * 4,
-        src = source.data, dst = dest.data;
+    var y, x, kx, total,
+        src = source.data, dst = dest.data,
+        r4 = radius * 4,
+        ty,
+        divide = r4 * 2 + 1,//q getting 16, this is 17
+        t1,t2,t3,t4,
+        buffer;
 
-    for( y=0; y < height; ++y ){
-        total = 0;
-        for( kx = -radius; kx <= radius; ++kx ){
+    for( y = 40; y < 41; y++ ){
 
-            total += src[ kx + y * iw4 ];
+        t1 = t2 = t3 = t4 = 0;
+        for( kx = -r4; kx < r4; kx = kx + 4 ){
+
+            //total += src[ kx + y * width ]; 
+            buffer = src[ kx + y * width ];
+            t1 += isNaN( buffer ) ? 0 : buffer;
+            buffer = src[ kx + y * width + 1 ];
+            t2 += isNaN( buffer ) ? 0 : buffer;
+            buffer = src[ kx + y * width + 2 ];
+            t3 += isNaN( buffer ) ? 0 : buffer;
+            buffer = src[ kx + y * width + 3 ];
+            t4 += isNaN( buffer ) ? 0 : buffer;
         }
-        dst[ 1 + y * iw4 ] = total / ( radius * 2 + 1 );
 
-        for( x = 1; x < width; ++x ){
+        dst[ y * width ] = Math.floor( t1 / 4 );
+        dst[ y * width + 1 ] = Math.floor( t2 / 4 );
+        dst[ y * width + 2 ] = Math.floor( t3 / 4 );
+        //dst[ y * width + 3 ] = Math.floor( t4 / 4 );
 
-            total -= src[ x - radius - 1 + y * iw4 ];
-            total += src[ x + radius + y * iw4 ];
-            dst[ x + y * iw4 ] = total / ( radius * 2 + 1 );
+        ty = y * width;
+        for( x = 0; x < width; x = x + 4 ){
+
+
+            buffer = src[ x - r4 + ty ];
+            t1 -= isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x + r4 + ty ];
+            t1 += isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x - r4 + ty + 1 ];
+            t2 -= isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x + r4 + ty + 1 ];
+            t2 += isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x - r4 + ty + 2 ];
+            t3 -= isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x + r4 + ty + 2 ];
+            t3 += isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x - r4  + ty + 3 ];
+            t4 -= isNaN( buffer ) ? 0 : buffer;
+
+            buffer = src[ x + r4 + ty + 3 ];
+            t4 += isNaN( buffer ) ? 0 : buffer;
+
+//console.log( t1, t1/divide );
+            dst[ x + y * width ] = Math.floor( t1 / 4 );
+            dst[ x + y * width + 1 ] = Math.floor( t2 / 4 );
+            dst[ x + y * width + 2 ] = Math.floor( t3 / 4 );
+            console.log( t1, t2, t3 );
+            //dst[ x + y * width + 3 ] = Math.floor( t4 / divide );
+
         }
+
     }
+    //console.log( dest );
     return dest;
 }
 
