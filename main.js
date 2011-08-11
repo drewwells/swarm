@@ -31,7 +31,7 @@ function blurIt(){
               h,
               w,
               2 );
-    
+
     ctx2.createImageData( output );
     ctx2.putImageData( output, 0, 0 );
 
@@ -81,19 +81,22 @@ function Blur( source, dest, height, width, radius ){
         h4 = height * 4,
         w4 = width * 4,
         iw4 = source.width * 4,
-        buffer = 0;
+        buffer = 0,
+        rad,
+        q;
 
 
     radius = radius || 2;
     radius = radius * 4; //4 colors per pixel
-    var rad = Math.pow( radius * 2, 2);
-
+    rad = Math.pow( radius * 2, 2);
+    
+    return BlurLine( source, dest, h4, w4, radius );
     for( y=0; y < h4; y++ ){
 
         for( x=0; x < w4; x++ ){
 
             total = 0;
-            var q = 0;
+            q = 0;
             for( ky = -radius; ky <= radius; ky = ky + 1 ){
 
                 for( kx = -radius; kx <= radius; kx = kx + 4 ){
@@ -108,6 +111,28 @@ function Blur( source, dest, height, width, radius ){
 
         }
 
+    }
+    return dest;
+}
+
+function BlurLine( source, dest, height, width, radius ){
+    var y, x, kx, total, iw4 = source.width * 4,
+        src = source.data, dst = dest.data;
+    console.log( height, width );
+    for( y=0; y < height; ++y ){
+        total = 0;
+        for( kx = -radius; kx <= radius; ++kx ){
+
+            total += src[ kx + y * iw4 ];
+        }
+        dst[ 1 + y * iw4 ] = total / ( radius * 2 + 1 );
+
+        for( x = 1; x < width; ++x ){
+
+            total -= src[ x - radius - 1 + y * iw4 ];
+            total += src[ x + radius + y * iw4 ];
+            dst[ x + y * iw4 ] = total / ( radius * 2 + 1 );
+        }
     }
     return dest;
 }
