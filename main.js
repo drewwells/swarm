@@ -118,7 +118,7 @@ function Blur( source, dest, height, width, radius ){
 function BlurLine( source, dest, height, width, radius ){
     var y, x, kx, total, iw4 = source.width * 4,
         src = source.data, dst = dest.data;
-    console.log( height, width );
+
     for( y=0; y < height; ++y ){
         total = 0;
         for( kx = -radius; kx <= radius; ++kx ){
