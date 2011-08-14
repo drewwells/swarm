@@ -18,17 +18,20 @@ img.onload = function(){
 var bitx = 1,
     bity = 1;
 
+function getImageData( canvas ){
+    return canvas.getImageData( 0, 0, 
+                                canvas.canvas.width,
+                                canvas.canvas.height );
+}
 function blurIt(){
 
-    var w = canvas.width,
-        h = canvas.height,
+    var w = img.naturalWidth,
+        h = img.naturalHeight,
         radius = 3,
         y,
         x = y = 0;
 
-    var output = Blur( ctx.getImageData(0,0,img.naturalWidth,img.naturalHeight),
-                       ctx2.getImageData(0,0,img.naturalWidth,img.naturalHeight),
-                       3 );
+    var output = Blur( getImageData( ctx ), getImageData( ctx2 ), 10 );
 
     ctx2.putImageData( output, 0, 0 );
 
@@ -42,10 +45,8 @@ function blurIt(){
 
 function Blur( source, dest, radius, x, y ){
 
-    var x,y,total = 0,
+    var total = 0,
         ky,kx,
-        src = source.data,
-        dst = dest.data,
         width = source.width,
         height = source.height,
         r4 = radius * 4,
@@ -55,45 +56,52 @@ function Blur( source, dest, radius, x, y ){
 
     radius = radius || 2;
     rad = Math.pow( radius * 2 + 1, 2);
-    return BlurLine( BlurVert(  source, dest, radius ), dest, radius );
+    return BlurVert(  source, dest, radius, 250, 250, 150 );
+    //return BlurLine( BlurVert(  source, dest, radius ), dest, radius );
 }
 
-function BlurVert( source, dest, radius ){
-    var y, x, ky, total,
+function BlurVert( source, dest, radius, startx, starty, boxWidth, boxHeight ){
+    var ky, total,x,y,
         src = source.data, dst = dest.data,
         width = source.width,
-        height = source.height,
-        w4 = width * 4,
+        imageWidth = width * 4,
+        imageHeight = source.height,
+        height = boxHeight ? ( starty + boxHeight ) : imageHeight,
+        w4 = boxWidth ? ( (startx + boxWidth) * 4 ) : imageWidth,
         r4 = radius * 4,
-        rw = radius * w4,
+        rw = radius * imageWidth,
         ty,
         divide = radius * 2 + 1,
+        boxRadius = false,
+        boxRadius2 = false,
         t1,t2,t3,t4,
         buffer;
-
-    for( x = 0; x < w4; x = x + 4 ){
+    if( height > source.height ){ height = imageHeight; }
+    if( w4 > imageWidth ){ w4 = imageWidth; }
+    if( !boxHeight && boxWidth ){ boxRadius = boxWidth; boxRadius2 = Math.pow( boxRadius, 2 ); }
+    for( x = startx * 4 || 0; x < w4; x = x + 4 ){
 
         t1 = t2 = t3 = t4 = 0;
-        for( ky = 0; ky <= radius; ky++ ){
+        y = starty || 0;
+        for( ky = -radius + starty; ky <= radius + y; ky++ ){
 
-            buffer = src[ x + ky * w4 ];
+            buffer = src[ x + ky * imageWidth ];
             t1 += isNaN( buffer ) ? 0 : buffer;
-            buffer = src[ x + ky * w4 + 1 ];
+            buffer = src[ x + ky * imageWidth + 1 ];
             t2 += isNaN( buffer ) ? 0 : buffer;
-            buffer = src[ x + ky * w4 + 2 ];
+            buffer = src[ x + ky * imageWidth + 2 ];
             t3 += isNaN( buffer ) ? 0 : buffer;
-            //buffer = src[ x + ky * w4 + 3 ];
+            //buffer = src[ x + ky * imageWidth + 3 ];
             //t4 += isNaN( buffer ) ? 0 : buffer;
         }
+        dst[ y * imageWidth + x ] = Math.floor( t1 / (radius * 2 + 1) );
+        dst[ y * imageWidth + x + 1 ] = Math.floor( t2 / (radius * 2 + 1) );
+        dst[ y * imageWidth + x + 2 ] = Math.floor( t3 / (radius * 2 + 1) );
 
-        dst[ x ] = Math.floor( t1 / (radius + 1) );
-        dst[ x + 1 ] = Math.floor( t2 / (radius + 1) );
-        dst[ x + 2 ] = Math.floor( t3 / (radius + 1) );
         //dst[ x + 3 ] = Math.floor( t4 / (radius + 1) );
+        for( ; y < height; y++ ){
 
-        for( y = 0; y < height; y++ ){
-
-            ty = y * w4;
+            ty = y * imageWidth;
             buffer = src[ x - rw + ty ];
             t1 -= isNaN( buffer ) ? 0 : buffer;
 
@@ -118,10 +126,11 @@ function BlurVert( source, dest, radius ){
             // buffer = src[ x + rw + ty + 3 ];
             // t4 += isNaN( buffer ) ? 0 : buffer;
 
-            dst[ x + y * w4 ] = Math.floor( t1 / divide );
-            dst[ x + y * w4 + 1 ] = Math.floor( t2 / divide );
-            dst[ x + y * w4 + 2 ] = Math.floor( t3 / divide );
-            //dst[ x + y * w4 + 3 ] = Math.floor( t4 / divide );
+            dst[ x + ty ] = Math.floor( t1 / divide );
+            dst[ x + ty + 1 ] = Math.floor( t2 / divide );
+            dst[ x + ty + 2 ] = Math.floor( t3 / divide );
+            //dst[ x + y * imageWidth + 3 ] = Math.floor( t4 / divide );
+
         }
         
     }
