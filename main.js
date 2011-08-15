@@ -31,41 +31,28 @@ function blurIt(){
         y,
         x = y = 0;
     var dx = 10, dy = 10;
+    //ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, 100, 100, 25), 0, 0 );
+    //return;
     (function blurme( x,y,r ){
         if( x + r > w || x - r < 0 ){ dx = -dx; }
         if( y + r > h || y - r < 0 ){ dy = -dy; }
-        var output = Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, r );
-        ctx2.putImageData( output, 0, 0 );
-        // setTimeout(function(){
-        //     blurme( x + dx, y + dy, r );
-        // }, 150);
-    })(250,250,130);
 
-    return;
+        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, r ), 0, 0 );
+        setTimeout(function(){
+            blurme( x + dx, y + dy, r );
+        }, 150);
+    })( 50, 50, 20 );
 }
 
-//Range
-// The CanvasPixelArray contains height x width x 4 bytes of data, with index values ranging from 0 to (height x width x 4)-1.
-// Column 200, Row 50
-//blueComponent = imageData.data[((50*(imageData.width*4)) + (200*4)) + 2];
-
 function Blur( source, dest, blurRadius, x, y, r ){
-
-    var total = 0,
-        r4 = blurRadius * 4,
-        buffer = 0,
-        rad,
-        q;
-
     blurRadius = blurRadius || 2;
 
-    console.log( x,y,r);
     return BlurVert(  source, dest, blurRadius, x, y, r );
     //return BlurVert(  source, dest, blurRadius , 100, 150, 50 );
     //return BlurLine( BlurVert(  source, dest, blurRadius ), dest, blurRadius );
 }
 
-function BlurVert( source, dest, radius, startx, starty, boxWidth, boxHeight ){
+function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight ){
     var ky, total,x,y,
         src = source.data, dst = dest.data,
         width = source.width,
@@ -73,41 +60,54 @@ function BlurVert( source, dest, radius, startx, starty, boxWidth, boxHeight ){
         imageHeight = source.height,
         height = boxHeight ? ( starty + boxHeight ) : imageHeight,
         w4 = boxWidth ? ( (startx + boxWidth) * 4 ) : imageWidth,
-        r4 = radius * 4,
-        rw = radius * imageWidth,
+        r4 = blurRadius * 4,
+        rw = blurRadius * imageWidth,
         ty,
-        divide = radius * 2 + 1,
+        divide = blurRadius  + 1,
         boxRadius = false,
         boxRadius2 = false,
         t1,t2,t3,t4,
-        buffer;
-    var primex, primey;
-    if( height > source.height ){ height = imageHeight; }
-    if( w4 > imageWidth ){ w4 = imageWidth; }
+        buffer,
+        yIterations;
+    var q = 0;
+    if( height > source.height ){ 
+
+        height = imageHeight; 
+    }
+    if( w4 > imageWidth ){ 
+
+        w4 = imageWidth; 
+    }
     if( !boxHeight && boxWidth ){ 
+
         boxRadius = boxWidth; 
         boxRadius2 = Math.pow( boxRadius, 2 ); 
     }
     if( boxRadius ){
+
         x = ( startx - boxRadius  ) * 4;
     } else {
+
         x = startx * 4 || 0;
     }
+
     for( ; x <= w4; x = x + 4 ){
 
         t1 = t2 = t3 = t4 = 0;
+        q = 0;
         if(  boxRadius ){
-            //P Theorem 
 
-            y = boxRadius2 - Math.pow( (x - startx*4)/4, 2 );
-            //without + 1, there's lines in the blur circle
-            y = starty - Math.floor( Math.sqrt( y ) ) + 1;
+            //P Theorem 
+            y = Math.sqrt( boxRadius2 - Math.pow( (x - startx * 4 ) / 4, 2 ) );
+            //Normalize sqrt values a little bit
+            // +1 helps reduce missing values
+            y = starty - Math.floor( y ) + 1;
         } else {
 
             y = starty || 0;
         }
 
-        for( ky = -radius + starty; ky <= radius + y; ky++ ){
+        for( ky = -blurRadius + starty; ky <= blurRadius + y; ky++ ){
 
             buffer = src[ x + ky * imageWidth ];
             t1 += isNaN( buffer ) ? 0 : buffer;
@@ -115,56 +115,55 @@ function BlurVert( source, dest, radius, startx, starty, boxWidth, boxHeight ){
             t2 += isNaN( buffer ) ? 0 : buffer;
             buffer = src[ x + ky * imageWidth + 2 ];
             t3 += isNaN( buffer ) ? 0 : buffer;
-            //buffer = src[ x + ky * imageWidth + 3 ];
-            //t4 += isNaN( buffer ) ? 0 : buffer;
+            q++;
         }
-        dst[ y * imageWidth + x ] = Math.floor( t1 / (radius * 2 + 1) );
-        dst[ y * imageWidth + x + 1 ] = Math.floor( t2 / (radius * 2 + 1) );
-        dst[ y * imageWidth + x + 2 ] = Math.floor( t3 / (radius * 2 + 1) );
 
-        //dst[ x + 3 ] = Math.floor( t4 / (radius + 1) );
-        //for( ; y < height; y++ ){
+        dst[ y * imageWidth + x ] = Math.floor( t1 / q );
+        dst[ y * imageWidth + x + 1 ] = Math.floor( t2 / q );
+        dst[ y * imageWidth + x + 2 ] = Math.floor( t3 / q );
+        //console.log( t1 );
+        //console.log( src[ y * imageWidth + x ], dst[ y * imageWidth + x ] );
+        for( ; !boxRadius ? 
+             y < height : 
+             Math.pow( y - starty, 2 ) + Math.pow( x/4 - startx, 2 ) < boxRadius2; 
+             y++ ){
 
-        for( ; !boxRadius ? y < height : Math.pow( y - starty, 2 ) + Math.pow( x/4 - startx, 2 ) < boxRadius2; y++ ){
+                 //Divide must be determined by the number of points
 
-            ty = y * imageWidth;
-            buffer = src[ x - rw + ty ];
-            t1 -= isNaN( buffer ) ? 0 : buffer;
+                 ty = y * imageWidth;
 
-            buffer = src[ x + rw + ty ];
-            t1 += isNaN( buffer ) ? 0 : buffer;
+                 buffer = src[ x - rw + ty ];
+                 t1 -= isNaN( buffer ) ? 0 : buffer;
+//console.log( t1 );
+                 buffer = src[ x + rw + ty ];
+                 t1 += isNaN( buffer ) ? 0 : buffer;
 
-            buffer = src[ x - rw + ty + 1 ];
-            t2 -= isNaN( buffer ) ? 0 : buffer;
+                 buffer = src[ x - rw + ty + 1 ];
+                 t2 -= isNaN( buffer ) ? 0 : buffer;
 
-            buffer = src[ x + rw + ty + 1 ];
-            t2 += isNaN( buffer ) ? 0 : buffer;
+                 buffer = src[ x + rw + ty + 1 ];
+                 t2 += isNaN( buffer ) ? 0 : buffer;
 
-            buffer = src[ x - rw + ty + 2 ];
-            t3 -= isNaN( buffer ) ? 0 : buffer;
+                 buffer = src[ x - rw + ty + 2 ];
+                 t3 -= isNaN( buffer ) ? 0 : buffer;
 
-            buffer = src[ x + rw + ty + 2 ];
-            t3 += isNaN( buffer ) ? 0 : buffer;
+                 buffer = src[ x + rw + ty + 2 ];
+                 t3 += isNaN( buffer ) ? 0 : buffer;
 
-            // buffer = src[ x - rw  + ty + 3 ];
-            // t4 -= isNaN( buffer ) ? 0 : buffer;
+                 if( boxRadius ){
 
-            // buffer = src[ x + rw + ty + 3 ];
-            // t4 += isNaN( buffer ) ? 0 : buffer;
+                     dst[ x + ty ] = Math.floor( t1 / q );
+                     //console.log( t1 );//src[ x + ty ], dst [ x + ty ] );
+                     dst[ x + ty + 1 ] = Math.floor( t2 / q );
+                     dst[ x + ty + 2 ] = Math.floor( t3 / q );
+                 } else {
 
-            if( boxRadius ){
-                //Number of points is determined by the distance from y axis (x=0)
-
-                dst[ x + ty ] = Math.floor( t1 / divide );
-                dst[ x + ty + 1 ] = Math.floor( t2 / divide );
-                dst[ x + ty + 2 ] = Math.floor( t3 / divide );
-            } else {
-                dst[ x + ty ] = Math.floor( t1 / divide );
-                dst[ x + ty + 1 ] = Math.floor( t2 / divide );
-                dst[ x + ty + 2 ] = Math.floor( t3 / divide );
-                //dst[ x + y * imageWidth + 3 ] = Math.floor( t4 / divide );
-            }
-        }
+                     dst[ x + ty ] = Math.floor( t1 / divide );
+                     dst[ x + ty + 1 ] = Math.floor( t2 / divide );
+                     dst[ x + ty + 2 ] = Math.floor( t3 / divide );
+                     //dst[ x + y * imageWidth + 3 ] = Math.floor( t4 / divide );
+                 }
+             }
         
     }
 
