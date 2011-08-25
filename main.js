@@ -1,18 +1,38 @@
+
+(function(){
 var canvas = document.getElementById('image'),
- ctx = canvas.getContext('2d'),
- canvas2 = document.getElementById('image-blur'),
- ctx2 = canvas2.getContext('2d');
+    ctx = canvas.getContext('2d'),
+    canvas2 = document.getElementById('image-blur'),
+    ctx2 = canvas2.getContext('2d'),
+    virgin = true;
 
 var img = new window.Image();
 img.src = 'amanda.jpg';
 
 img.onload = function(){
 
-    ctx.canvas.width = ctx2.canvas.width = this.naturalWidth;
-    ctx.canvas.height = ctx2.canvas.height = this.naturalHeight;
+    if( virgin ){
+        ctx.canvas.width = ctx2.canvas.width = this.naturalWidth;
+        ctx.canvas.height = ctx2.canvas.height = this.naturalHeight;
+    }
     ctx.drawImage( img, 0, 0 );
-    ctx2.drawImage( img, 0, 0 );  
-    button.click();
+    if( virgin ){
+
+        ctx2.drawImage( img, 0, 0 );  
+        switchImage( 0 );
+        button.click();
+    }
+
+};
+
+function switchImage( imageNumber ){
+
+    imageNumber %= 4;
+    img.src = imageNumber + '.jpeg';
+    ctx.drawImage( img, 0, 0 );
+    setTimeout(function( ){
+        switchImage( imageNumber = imageNumber + 1 );
+    }, 25000);
 };
 
 function getImageData( canvas ){
@@ -26,28 +46,35 @@ function blurIt(){
     var maxw = img.naturalWidth,
         maxh = img.naturalHeight,
         y, x = y = 0,
-        dx = 10, dy = 10;
+        dx, dy = dx = 11; //Important to keep this value not divisible by height or width
 
-    ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx )), 0, 0);
-    return;
-    (function blurme( x, y, w, h ){
-        if( x + w > maxw || x - w < 0 ){ dx = -dx; }
-        if( y + ( h || w ) > maxh || y - ( h || w ) < 0 ){ dy = -dy; }
+    if( virgin ){
 
-        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, w, h ), 0, 0 );
-        window.setTimeout(function(){
-            blurme( x + dx, y + dy, w, h );
-        }, 150);
-    })( 50, 50, 20, 20 );
+        virgin = false;
+        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx ), 10),  0, 0);
+
+        (function blurme( x, y, w, h ){
+            if( x + w > maxw || x - w < 0 ){ dx = -dx; }
+            if( y + ( h || w ) > maxh || y - ( h || w ) < 0 ){ dy = -dy; }
+
+            ctx2.putImageData( 
+                Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, w, h ), 
+                0, 0 );
+            window.setTimeout(function(){
+                blurme( x + dx, y + dy, w, h );
+            }, 70);
+        })( 50, 50, 43 );
+    }
 }
 
 function Blur( source, dest, blurRadius, x, y, w, h ){
-    blurRadius = blurRadius || 10;
 
+    blurRadius = blurRadius || 10;
     return BlurVert(  source, dest, blurRadius, x, y, w, h );
 }
 
 function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight ){
+
     var ky, total,x,y,
         src = source.data, dst = dest.data,
         width = source.width,
@@ -64,11 +91,14 @@ function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight
         t1,t2,t3,t4,
         buffer, temp, temp1;
 
-
     startx = startx || 0;
     starty = starty || 0;
-    boxWidth = boxWidth || imageWidth;
-    boxHeight = boxHeight || imageHeight;
+    //No box provided, set entire image as box
+    if( !boxWidth && !boxHeight ){
+        boxWidth = boxWidth || imageWidth;  
+        boxHeight = boxHeight || imageHeight;
+    }
+
     if( height > source.height ){ 
         height = imageHeight; 
     }
@@ -115,7 +145,7 @@ function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight
         for( ; boxRadius ? 
              Math.floor( Math.pow( y - starty, 2 ) + Math.pow( x/4 - startx, 2 ) ) < boxRadius2 :
              y < height;
-             y=y+1 ){
+             y = y + 1 ){
 
                  ty = y * imageWidth;
                  t1 -= src[ temp = x - rw + ty ] || 0;
@@ -216,3 +246,4 @@ function BlurLine( source, dest, radius ){
 var button = document.getElementById('blurit');
 button.onclick = blurIt;
 //Push button
+})();
