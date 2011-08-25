@@ -16,10 +16,10 @@ img.onload = function(){
         ctx.canvas.height = ctx2.canvas.height = this.naturalHeight;
     }
     ctx.drawImage( img, 0, 0 );
-    if( virgin ){
 
+    if( virgin ){
         ctx2.drawImage( img, 0, 0 );  
-        switchImage( 0 );
+        setTimeout(function(){ switchImage( 0 ); },0);
         button.click();
     }
 
