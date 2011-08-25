@@ -5,7 +5,7 @@ var canvas = document.getElementById('image'),
 
 var img = new window.Image();
 img.src = 'amanda.jpg';
-//img.src = 'img00.gif';
+
 img.onload = function(){
 
     ctx.canvas.width = ctx2.canvas.width = this.naturalWidth;
@@ -15,90 +15,84 @@ img.onload = function(){
     button.click();
 };
 
-var bitx = 1,
-    bity = 1;
-
 function getImageData( canvas ){
     return canvas.getImageData( 0, 0, 
                                 canvas.canvas.width,
                                 canvas.canvas.height );
 }
+
 function blurIt(){
 
-    var w = img.naturalWidth,
-        h = img.naturalHeight,
-        radius = 3,
-        y,
-        x = y = 0;
-    var dx = 10, dy = 10;
-    //ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, 100, 100, 25), 0, 0 );
-    //return;
-    (function blurme( x,y,r ){
-        if( x + r > w || x - r < 0 ){ dx = -dx; }
-        if( y + r > h || y - r < 0 ){ dy = -dy; }
+    var maxw = img.naturalWidth,
+        maxh = img.naturalHeight,
+        y, x = y = 0,
+        dx = 10, dy = 10;
 
-        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, 50, 50 ), 0, 0 );
-        setTimeout(function(){
-            blurme( x + dx, y + dy, r );
+    ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx )), 0, 0);
+    return;
+    (function blurme( x, y, w, h ){
+        if( x + w > maxw || x - w < 0 ){ dx = -dx; }
+        if( y + ( h || w ) > maxh || y - ( h || w ) < 0 ){ dy = -dy; }
+
+        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, w, h ), 0, 0 );
+        window.setTimeout(function(){
+            blurme( x + dx, y + dy, w, h );
         }, 150);
-    })( 50, 50, 20 );
+    })( 50, 50, 20, 20 );
 }
 
 function Blur( source, dest, blurRadius, x, y, w, h ){
-    blurRadius = blurRadius || 2;
+    blurRadius = blurRadius || 10;
 
     return BlurVert(  source, dest, blurRadius, x, y, w, h );
-    //return BlurVert(  source, dest, blurRadius , 100, 150, 50 );
-    //return BlurLine( BlurVert(  source, dest, blurRadius ), dest, blurRadius );
 }
 
 function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight ){
     var ky, total,x,y,
         src = source.data, dst = dest.data,
         width = source.width,
-        imageWidth = width * 4,
+        imageWidth = width << 2,
         imageHeight = source.height,
         height = boxHeight ? ( starty + boxHeight ) : imageHeight,
         w4 = boxWidth ? ( (startx + boxWidth) * 4 ) : imageWidth,
-        r4 = blurRadius * 4,
+        r4 = blurRadius << 2,
         rw = blurRadius * imageWidth,
         ty,
-        divide = blurRadius  + 1,
+        divide = ( blurRadius << 1 ) + 1,
         boxRadius = false,
         boxRadius2 = false,
         t1,t2,t3,t4,
-        buffer,
-        yIterations;
-    var q = 0;
-    if( height > source.height ){ 
+        buffer, temp, temp1;
 
+
+    startx = startx || 0;
+    starty = starty || 0;
+    boxWidth = boxWidth || imageWidth;
+    boxHeight = boxHeight || imageHeight;
+    if( height > source.height ){ 
         height = imageHeight; 
     }
     if( w4 > imageWidth ){ 
-
         w4 = imageWidth; 
     }
     if( !boxHeight && boxWidth ){ 
-
         boxRadius = boxWidth; 
         boxRadius2 = Math.pow( boxRadius, 2 ); 
     }
     if( boxRadius ){
 
-        x = ( startx - boxRadius  ) * 4;
+        x = ( startx - boxRadius  ) << 2;
     } else {
-
-        x = startx * 4 || 0;
+        x = startx << 2 || 0;
     }
 
     for( ; x <= w4; x = x + 4 ){
 
         t1 = t2 = t3 = t4 = 0;
-        q = 0;
-        if(  boxRadius ){
+        if( boxRadius ){
 
             //P Theorem 
-            y = Math.sqrt( boxRadius2 - Math.pow( (x - startx * 4 ) / 4, 2 ) );
+            y = Math.sqrt( boxRadius2 - Math.pow( (x - ( startx << 2 ) ) >> 2, 2 ) );
             //Normalize sqrt values a little bit
             // +1 helps reduce missing values
             y = starty - Math.floor( y ) + 1;
@@ -107,64 +101,41 @@ function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight
             y = starty || 0;
         }
 
-        for( ky = -blurRadius + starty; ky <= blurRadius + y; ky++ ){
+        for( ky = -blurRadius + y; ky <= blurRadius + y; ky++ ){
 
-            buffer = src[ x + ky * imageWidth ];
-            t1 += isNaN( buffer ) ? 0 : buffer;
-            buffer = src[ x + ky * imageWidth + 1 ];
-            t2 += isNaN( buffer ) ? 0 : buffer;
-            buffer = src[ x + ky * imageWidth + 2 ];
-            t3 += isNaN( buffer ) ? 0 : buffer;
-            q++;
+            t1 += src[ temp = x + ky * imageWidth ] || 0;
+            t2 += src[ temp = temp + 1 ] || 0;
+            t3 += src[ temp = temp + 1 ] || 0;
         }
 
-        dst[ y * imageWidth + x ] = Math.floor( t1 / q );
-        dst[ y * imageWidth + x + 1 ] = Math.floor( t2 / q );
-        dst[ y * imageWidth + x + 2 ] = Math.floor( t3 / q );
-        //console.log( t1 );
-        //console.log( src[ y * imageWidth + x ], dst[ y * imageWidth + x ] );
-        for( ; !boxRadius ? 
-             y < height : 
-             Math.pow( y - starty, 2 ) + Math.pow( x/4 - startx, 2 ) < boxRadius2; 
-             y++ ){
+        dst[ temp = y * imageWidth + x ] = Math.floor( t1 / divide );
+        dst[ temp = temp + 1 ] = Math.floor( t2 / divide );
+        dst[ temp = temp + 1 ] = Math.floor( t3 / divide );
 
-                 //Divide must be determined by the number of points
+        for( ; boxRadius ? 
+             Math.floor( Math.pow( y - starty, 2 ) + Math.pow( x/4 - startx, 2 ) ) < boxRadius2 :
+             y < height;
+             y=y+1 ){
 
                  ty = y * imageWidth;
-
-                 buffer = src[ x - rw + ty ];
-                 t1 -= isNaN( buffer ) ? 0 : buffer;
-//console.log( t1 );
-                 buffer = src[ x + rw + ty ];
-                 t1 += isNaN( buffer ) ? 0 : buffer;
-
-                 buffer = src[ x - rw + ty + 1 ];
-                 t2 -= isNaN( buffer ) ? 0 : buffer;
-
-                 buffer = src[ x + rw + ty + 1 ];
-                 t2 += isNaN( buffer ) ? 0 : buffer;
-
-                 buffer = src[ x - rw + ty + 2 ];
-                 t3 -= isNaN( buffer ) ? 0 : buffer;
-
-                 buffer = src[ x + rw + ty + 2 ];
-                 t3 += isNaN( buffer ) ? 0 : buffer;
-
+                 t1 -= src[ temp = x - rw + ty ] || 0;
+                 t1 += src[ temp1 = x + rw + ty ] || 0;
+                 t2 -= src[ temp = temp + 1 ] || 0;
+                 t2 += src[ temp1 = temp1 + 1 ] || 0;
+                 t3 -= src[ temp = temp + 1 ] || 0;
+                 t3 += src[ temp1 = temp1 + 1 ] || 0;
                  if( boxRadius ){
 
-                     dst[ x + ty ] = Math.floor( t1 / q );
-                     //console.log( t1 );//src[ x + ty ], dst [ x + ty ] );
-                     dst[ x + ty + 1 ] = Math.floor( t2 / q );
-                     dst[ x + ty + 2 ] = Math.floor( t3 / q );
+                     dst[ temp = x + ty ] = Math.floor( t1 / divide );
+                     dst[ temp = temp + 1 ] = Math.floor( t2 / divide );
+                     dst[ temp = temp + 1 ] = Math.floor( t3 / divide );
                  } else {
 
-                     dst[ x + ty ] = Math.floor( t1 / divide );
-                     dst[ x + ty + 1 ] = Math.floor( t2 / divide );
-                     dst[ x + ty + 2 ] = Math.floor( t3 / divide );
-                     //dst[ x + y * imageWidth + 3 ] = Math.floor( t4 / divide );
+                     dst[ temp = x + ty ] = Math.floor( t1 / divide );
+                     dst[ temp = temp + 1 ] = Math.floor( t2 / divide );
+                     dst[ temp = temp + 1 ] = Math.floor( t3 / divide );
                  }
              }
-        
     }
 
     return dest;
@@ -172,13 +143,13 @@ function BlurVert( source, dest, blurRadius, startx, starty, boxWidth, boxHeight
 
 function BlurLine( source, dest, radius ){
     var y, x, kx, total,
-        w4 = width * 4,
+        w4 = width << 2,
         src = source.data, dst = dest.data,
         height = source.height,
         width = source.width,
-        r4 = radius * 4,
+        r4 = radius << 2,
         ty,
-        divide = radius * 2 + 1,
+        divide = radius << 1 + 1,
         //d4 = r4 * 2 / 4 + 1,
         t1,t2,t3,t4,
         buffer;
@@ -240,12 +211,6 @@ function BlurLine( source, dest, radius ){
     }
 
     return dest;
-}
-
-function move( x, y, callback, increment, bitx, bity ){
-
-    increment = increment || 30;
-    callback( x + ( increment * bitx ), y + ( increment * bity ) );
 }
 
 var button = document.getElementById('blurit');
