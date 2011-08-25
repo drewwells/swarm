@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <style>
-canvas{
-
+body{
+  font-family: 'HelveticaRegular',arial,sans-serif;
 }
+
 </style>
 <div id="content">
 </div>
@@ -12,10 +13,16 @@ canvas{
 </canvas>
 <canvas id="image-blur" height="128" width="128" style="float:left;">
 </canvas>-->
+
+<p>
+I originally saw this at one of the Telfair Museums in Savannah, GA.  I looked around the web and could not find this same effect.  The image on the left cycles as the snake draws a blurred version of it on the right.
+</p>
 <canvas id="image" style="float:left;">
+
 </canvas>
 <canvas id="image-blur" style="float:left;">
 </canvas>
-<input type="submit" value="Swarm" id="blurit" />
+<p style="clear:left;">Developed with canvas.  Blurring calculations may cause slowdowns on mobile devices.</p>
+<input type="submit" value="Swarm" id="blurit" style="display:none;" />
 <script src=main.js?v=1></script>
 </html>
