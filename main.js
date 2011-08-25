@@ -37,17 +37,17 @@ function blurIt(){
         if( x + r > w || x - r < 0 ){ dx = -dx; }
         if( y + r > h || y - r < 0 ){ dy = -dy; }
 
-        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, r ), 0, 0 );
+        ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, 50, 50 ), 0, 0 );
         setTimeout(function(){
             blurme( x + dx, y + dy, r );
         }, 150);
     })( 50, 50, 20 );
 }
 
-function Blur( source, dest, blurRadius, x, y, r ){
+function Blur( source, dest, blurRadius, x, y, w, h ){
     blurRadius = blurRadius || 2;
 
-    return BlurVert(  source, dest, blurRadius, x, y, r );
+    return BlurVert(  source, dest, blurRadius, x, y, w, h );
     //return BlurVert(  source, dest, blurRadius , 100, 150, 50 );
     //return BlurLine( BlurVert(  source, dest, blurRadius ), dest, blurRadius );
 }
