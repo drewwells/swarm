@@ -1,28 +1,43 @@
 <!DOCTYPE html>
 <html>
+<head>
 <style>
 body{
   font-family: 'HelveticaRegular',arial,sans-serif;
 }
 
 </style>
+</head>
+<body>
 <div id="content">
 </div>
-<!--<image id=img src=amanda.jpg />-->
-<!--<canvas id="image" height="128" width="128" style="float:left;">
-</canvas>
-<canvas id="image-blur" height="128" width="128" style="float:left;">
-</canvas>-->
-
 <p>
 I originally saw this at one of the Telfair Museums in Savannah, GA.  I looked around the web and could not find this same effect.  The image on the left cycles as the snake draws a blurred version of it on the right.
 </p>
-<canvas id="image" style="float:left;">
-
+<canvas id="image" style="float:left; display: none;">
 </canvas>
 <canvas id="image-blur" style="float:left;">
 </canvas>
-<p style="clear:left;">Developed with canvas.  Blurring calculations may cause slowdowns on mobile devices.</p>
+<p style="clear:left;">
+<p>Switch Kittens (seconds)</p>
+<label for="k1">Slow</label>
+<input id="k1" type="radio" name="kitten" value="25" checked />
+<label for="k2">Medium</label>
+<input id="k2" type="radio" name="kitten" value="50" />
+<label for="k3">Fast</label>
+<input id="k3" type="radio" name="kitten" value="75" />
+<p>Snake speed</p>
+<label for="s1">Slow</label>
+<input id="s1" type="radio" name="snake" value="65" />
+<label for="s2">Medium</label>
+<input id="s2" type="radio" name="snake" value="35" checked />
+<label for="s3">Fast</label>
+<input id="s3" type="radio" name="snake" value="15" />
+</p>
+<p>
+Developed with canvas.  Blurring calculations may cause slowdowns on mobile devices.
+</p>
 <input type="submit" value="Swarm" id="blurit" style="display:none;" />
-<script src=main.js?v=1></script>
+</body>
+<script src=main.js?v=3></script>
 </html>

@@ -1,12 +1,14 @@
+//(function(){
 
-(function(){
 var canvas = document.getElementById('image'),
     ctx = canvas.getContext('2d'),
     canvas2 = document.getElementById('image-blur'),
     ctx2 = canvas2.getContext('2d'),
-    virgin = true;
-
-var img = new window.Image();
+    virgin = true,
+    img = new window.Image(),
+    kittenSpeed = 50,
+    snakeSpeed = 35;
+    
 img.src = 'amanda.jpg';
 
 img.onload = function(){
@@ -32,7 +34,7 @@ function switchImage( imageNumber ){
     ctx.drawImage( img, 0, 0 );
     setTimeout(function( ){
         switchImage( imageNumber = imageNumber + 1 );
-    }, 25000);
+    }, kittenSpeed * 1000);
 };
 
 function getImageData( canvas ){
@@ -40,6 +42,23 @@ function getImageData( canvas ){
                                 canvas.canvas.width,
                                 canvas.canvas.height );
 }
+var move = (function(){
+    var iterations = 0,
+        bitx = 1, bity = 1;
+    return function( x, y, dx, dy ){
+        var rx = Math.random() + .5,
+            ry = Math.random() + .5;
+        if( ++iterations % 17 === 0 ){ 
+            if( Math.random() > .5 ){
+                bitx = -bitx;
+            }
+            if( Math.random() > .5 ){
+                bity = -bity;
+            }
+        }
+        return [ Math.floor( dx * rx * bitx + x ), Math.floor( dy * ry * bity + y ) ];
+    };
+})();
 
 function blurIt(){
 
@@ -47,22 +66,35 @@ function blurIt(){
         maxh = img.naturalHeight,
         y, x = y = 0,
         dx, dy = dx = 11; //Important to keep this value not divisible by height or width
-
+    var arr = [];
     if( virgin ){
 
         virgin = false;
         ctx2.putImageData( Blur( getImageData( ctx ), getImageData( ctx ), 10),  0, 0);
 
         (function blurme( x, y, w, h ){
-            if( x + w > maxw || x - w < 0 ){ dx = -dx; }
-            if( y + ( h || w ) > maxh || y - ( h || w ) < 0 ){ dy = -dy; }
+            arr = move( x, y, dx, dy );
+            arr.splice( 2, 0, w, h );
+            //Boundary detection
+            // if( arr[0] + w > maxw ) {
+            //     arr[0] = arr[0] + maxw - w;
+            // } else if( arr[0] - w < 0 ){ 
+
+            //     arr[0] = arr[0] - maxw + w; 
+            // }
+            if( arr[1] + ( h || w ) > maxh ){
+                arr[1] = arr[1] - maxh + ( h || w );
+            } else if( arr[1] - ( h || w ) < 0 ){ 
+                
+                arr[1] = arr[1] + maxh - ( h || w ); 
+            }
 
             ctx2.putImageData( 
-                Blur( getImageData( ctx ), getImageData( ctx2 ), 10, x, y, w, h ), 
+                Blur( getImageData( ctx ), getImageData( ctx2 ), 10, arr[0], arr[1], w, h ), 
                 0, 0 );
             window.setTimeout(function(){
-                blurme( x + dx, y + dy, w, h );
-            }, 70);
+                blurme.apply( null, arr );
+            }, snakeSpeed);
         })( 50, 50, 43 );
     }
 }
@@ -245,5 +277,32 @@ function BlurLine( source, dest, radius ){
 
 var button = document.getElementById('blurit');
 button.onclick = blurIt;
+
+var radios = document.getElementsByTagName('input'),
+    radioLen = radios.length,
+    radio;
+
+function updateSnakeSpeed(){
+    snakeSpeed = this.value;
+}
+
+function updateKittenSpeed(){
+    kittenSpeed = this.value;
+}
+
+while( radioLen-- ){
+    radio = radios[radioLen];
+    if( radio.type === 'radio' ){
+ 
+        if( radio.name === 'snake' ){
+
+            radio.onchange = updateSnakeSpeed;
+        } else if( radio.name === 'kitten' ){
+
+            radio.onchange = updateKittenSpeed;
+        }
+    }
+}
+
 //Push button
-})();
+//})();
